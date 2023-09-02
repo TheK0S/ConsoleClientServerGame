@@ -17,7 +17,7 @@ namespace GameServer.Characters
         int _defense;
         int _experiance;
         int _level;
-        IWeapon? _weapon;
+        Weapon? _weapon;
 
         public User(int id, string? name)
         {
@@ -31,11 +31,11 @@ namespace GameServer.Characters
             _weapon = null;
         }
 
-        public int Id { get; set; }
-        public string? Name { get; set; }
-        public int Health { get; set; }
-        public int Attack { get; set; }
-        public int Deffence { get; set; }
+        public int Id => _id;
+        public string? Name => _name;
+        public int Health => _health;
+        public int Attack => _attack;
+        public int Deffence => _defense;
         public int Experiance {
             get => _experiance;
             set
@@ -59,14 +59,14 @@ namespace GameServer.Characters
             {
                 if(_level > 0)
                 {
-                    Health++;
-                    Attack++;
-                    Deffence++;
+                    _health++;
+                    _attack++;
+                    _defense++;
                 }
 
             } 
         }
-        public IWeapon? Wapon
+        public Weapon? Weapon
         { 
             get => _weapon;
             set
@@ -74,17 +74,18 @@ namespace GameServer.Characters
                 if(value != null)
                 {
                     _weapon = value;
-                    Health += _weapon.HealthBuff;
-                    Attack += _weapon.AttackBuff;
-                    Deffence += _weapon.DeffenceBuff;
+                    _health += _weapon.HealthBuff;
+                    _attack += _weapon.AttackBuff;
+                    _defense += _weapon.DeffenceBuff;
                 }
                 else
                 {
                     if(_weapon != null)
                     {
-                        Health -= _weapon.HealthBuff;
-                        Attack -= _weapon.AttackBuff;
-                        Deffence -= _weapon.DeffenceBuff;
+                        _health -= _weapon.HealthBuff;
+                        _attack -= _weapon.AttackBuff;
+                        _defense -= _weapon.DeffenceBuff;
+                        _weapon = null;
                     }
                 }
             }                
@@ -94,7 +95,7 @@ namespace GameServer.Characters
 
         public override string ToString()
         {
-            return $"Player: {Name}\tlvl: {Level}\nHealth: {Health}\nAtt: {Attack}\nDeff: {Deffence}";
+            return $"Player: {Name}\t\tlvl: {Level}  Health: {Health}  Att: {Attack}  Deff: {Deffence}  Weapon: {Weapon?.ToString()?? "no weapon"}";
         }
     }
 }
