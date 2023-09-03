@@ -19,20 +19,26 @@ namespace GameServer.Characters
         int _level;
         Weapon? _weapon;
 
-        public User(int id, string? name)
+        public User(int id, Socket socket, string? name = null)
         {
             this._id = id;
-            this._name = name;
+            Name = name;
             _health = 5;
             _attack = 1;
             _defense = 1;
             _experiance = 0;
             _level = 1;
             _weapon = null;
+            UserSocket = socket;
         }
 
         public int Id => _id;
-        public string? Name => _name;
+        public string? Name
+        {
+            get => _name;
+            set { _name = value != null? value : $"player{_id}"; }
+        }
+        
         public int Health => _health;
         public int Attack => _attack;
         public int Deffence => _defense;
@@ -91,7 +97,7 @@ namespace GameServer.Characters
             }                
         }
 
-        public Socket? UserSocket { get; set; }
+        public Socket UserSocket { get; set; }
 
         public override string ToString()
         {

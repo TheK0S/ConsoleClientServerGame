@@ -1,4 +1,5 @@
 ﻿//Server
+
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -7,7 +8,7 @@ using GameServer.Characters;
 using GameServer.Weapons;
 
 int ID = 1;
-ConcurrentDictionary<int, Socket> clients = new ConcurrentDictionary<int, Socket>();
+ConcurrentDictionary<int, User> clients = new ConcurrentDictionary<int, User>();
 
 IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
 int port = 4444;
@@ -23,19 +24,26 @@ while (true)
 
     int clientId = ID++;
 
-    clients.TryAdd(clientId, client);
+    User user = new User(clientId, client);
+
+    clients.TryAdd(clientId, user);
 
     _ = HandleClientMessagesAsync(clientId);
 }
 
 async Task HandleClientMessagesAsync(int clientId)
 {
-    Socket client = clients[clientId];
+    Socket client = clients[clientId].UserSocket;
+    User currentUser = clients[clientId];
 
     using NetworkStream stream = new NetworkStream(client);
 
     byte[] buffer = new byte[1024];
     int bytesRead;
+
+    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+    currentUser.Name = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+    BroadcastMessage($"Игрок {currentUser.Name} присоеденился к игре");
 
     try
     {
@@ -71,9 +79,9 @@ void BroadcastMessage(string message)
 
     foreach (var client in clients.Values)
     {
-        if (client.Connected)
+        if (client.UserSocket.Connected)
         {
-            client.Send(messageBytes);
+            client.UserSocket.Send(messageBytes);
         }
     }
 }

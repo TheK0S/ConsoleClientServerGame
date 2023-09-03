@@ -1,6 +1,5 @@
 ﻿//Client
 
-using static System.Net.Mime.MediaTypeNames;
 using System.Net.Sockets;
 using System.Text;
 using System.Net;
@@ -12,15 +11,16 @@ Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, Protoc
 
 
 string? name;
-Console.WriteLine("Welcome to Underworld\n");
-Console.Write("Enter your name: ");
+Console.WriteLine("Добро пожаловать в Подземелье\n");
+Console.Write("Введи свое имя: ");
 name = Console.ReadLine();
 
 await socket.ConnectAsync(serverEndPoint);
+await SendMessageAsync(name ?? "no name");
 
 _ = Task.Run(ReceiveMessagesAsync);
 
-await SendMessageAsync("Hello server");
+
 Console.ReadLine();
 
 async Task SendMessageAsync(string message)
