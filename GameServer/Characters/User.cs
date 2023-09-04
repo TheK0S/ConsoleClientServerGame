@@ -23,9 +23,9 @@ namespace GameServer.Characters
         {
             this._id = id;
             Name = name;
-            _health = 5;
-            _attack = 1;
-            _defense = 1;
+            _health = 100;
+            _attack = 10;
+            _defense = 10;
             _experiance = 0;
             _level = 1;
             _weapon = null;
@@ -65,9 +65,9 @@ namespace GameServer.Characters
             {
                 if(_level > 0)
                 {
-                    _health++;
-                    _attack++;
-                    _defense++;
+                    _health += 10;
+                    _attack += 10;
+                    _defense += 10;
                 }
 
             } 

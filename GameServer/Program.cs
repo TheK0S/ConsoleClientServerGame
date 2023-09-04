@@ -5,10 +5,18 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using GameServer.Characters;
+using GameServer.Rooms;
 using GameServer.Weapons;
 
 int ID = 1;
-ConcurrentDictionary<int, User> clients = new ConcurrentDictionary<int, User>();
+int gameLevel = 1;
+Random random = new Random();
+
+List<User> clients = new List<User>();
+List<Mob> mobs = new List<Mob>();
+List<Cave> caves = new List<Cave>();
+List<Weapon> weapons = new List<Weapon>();
+Cave? currentCave;
 
 IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
 int port = 4444;
@@ -26,14 +34,37 @@ while (true)
 
     User user = new User(clientId, client);
 
-    clients.TryAdd(clientId, user);
+    clients.Add(user);
 
     _ = HandleClientMessagesAsync(clientId);
+}
+
+
+
+
+
+void CaveInit(int gameLvl)
+{
+    currentCave = new Cave();
+    currentCave.users = clients ?? new List<User>();
+    currentCave.mobs = new List<Mob>();
+
+    for (int i = 0; i < gameLvl + 1; i++)
+        currentCave.mobs.Add(mobs[random.Next(gameLvl)]);
+}
+
+void MobsInit(int mobsCount)
+{
+    for (int i = 0; i < mobsCount; i++)
+    {
+        mobs.Add(new Mob(i + 1, $"Mob-{i + 1}", (i + 1) * 5, (i + 1) * 2, (i + 1) * 2));
+    }
 }
 
 async Task HandleClientMessagesAsync(int clientId)
 {
     Socket client = clients[clientId].UserSocket;
+
     User currentUser = clients[clientId];
 
     using NetworkStream stream = new NetworkStream(client);
