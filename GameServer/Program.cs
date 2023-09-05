@@ -59,13 +59,11 @@ while(isGameContinue)
 
 
 
-    Message msg = new Message();
-    msg.users = clients ?? new List<User>();
-    msg.mobs = currentCave?.mobs ?? new List<Mob>();
-    msg.gameActions = currentGameActions.ToList();
-    currentGameActions.Clear();
+    
+    
 
-    BroadcastMessage(msg);
+    BroadcastMessage(CreateMessage());
+    currentGameActions.Clear();
     Thread.Sleep(3000);
 
     gameLevel++;
@@ -77,6 +75,15 @@ void GameActionsHandler()
 
 }
 
+Message CreateMessage()
+{
+    Message msg = new Message();
+    msg.users = clients ?? new List<User>();
+    msg.mobs = currentCave?.mobs ?? new List<Mob>();
+    msg.gameActions = currentGameActions;
+
+    return msg;
+}
 
 void CaveInit(int gameLvl, int mCount)
 {
