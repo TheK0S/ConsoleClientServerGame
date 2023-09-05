@@ -56,7 +56,7 @@ string MountUserUI(Message message)
 
 async Task ReceiveMessagesAsync()
 {
-    byte[] buffer = new byte[512];
+    byte[] buffer = new byte[2048];
     int bytesRead;
 
     try

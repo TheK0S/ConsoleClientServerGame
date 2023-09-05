@@ -53,8 +53,9 @@ while(isGameContinue)
     if (clients?.Count == 0) continue;
 
     MobsInit(mobsCount);
-    CaveInit(gameLevel);
+    CaveInit(gameLevel, mobsCount);
 
+    GameActionsHandler();
 
 
 
@@ -62,18 +63,25 @@ while(isGameContinue)
     msg.users = clients ?? new List<User>();
     msg.mobs = currentCave?.mobs ?? new List<Mob>();
     msg.gameActions = currentGameActions.ToList();
+    currentGameActions.Clear();
 
     BroadcastMessage(msg);
-    Thread.Sleep(10000);
+    Thread.Sleep(3000);
 
     gameLevel++;
 }
 
 
-
-
-void CaveInit(int gameLvl)
+void GameActionsHandler()
 {
+
+}
+
+
+void CaveInit(int gameLvl, int mCount)
+{
+    if(gameLvl > mCount -1) gameLvl = mCount - 1;
+
     currentCave = new Cave();
     currentCave.users = clients ?? new List<User>();
     currentCave.mobs = new List<Mob>();
@@ -84,6 +92,8 @@ void CaveInit(int gameLvl)
 
 void MobsInit(int mobsCount)
 {
+    mobs.Clear();
+
     for (int i = 0; i < mobsCount; i++)
     {
         mobs.Add(new Mob(i + 1, $"Mob-{i + 1}", (i + 1) * 5, (i + 1) * 2, (i + 1) * 2));
@@ -96,7 +106,7 @@ async Task HandleClientMessagesAsync(User user)
 
     using NetworkStream stream = new NetworkStream(client);
 
-    byte[] buffer = new byte[1024];
+    byte[] buffer = new byte[2048];
     int bytesRead;
 
     bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);

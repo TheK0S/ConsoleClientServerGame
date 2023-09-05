@@ -1,4 +1,5 @@
 ﻿using GameServer.Weapons;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,9 +50,9 @@ namespace GameServer.Characters
             get => _experiance;
             set
             {
-                if(_experiance + value >= 10)
+                if(_experiance + value >= 50)
                 {
-                    _experiance = _experiance + value - 10;
+                    _experiance = _experiance + value - 50;
                     Level++;
                 }
                 else
@@ -100,11 +101,26 @@ namespace GameServer.Characters
             }                
         }
 
+        [JsonIgnore]
         public Socket UserSocket { get; set; }
 
         public override string ToString()
         {
             return $"{Name}\tlvl:{Level}  Health:{Health}  Att:{Attack}  Deff:{Deffence}  Weapon:{Weapon?.ToString()?? "no weapon"}";
+        }
+
+        public string AttackTheEnemy(Mob mob)
+        {
+            if (mob == null || !mob.IsAlive) return $"Соперник {mob?.Name} уже мертв";
+
+            int damage = Attack - mob.Deffence;            
+            mob.Health -= damage;
+            Experiance += damage;
+
+            if (mob.Health > 0) return $"{Name} нанес {damage} урона {mob.Name}";
+
+            mob.IsAlive = false;
+            return $"{Name} уничтожил {mob.Name}";
         }
     }
 }
