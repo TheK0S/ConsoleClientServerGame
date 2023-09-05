@@ -4,13 +4,18 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using GameServer;
 using GameServer.Characters;
 using GameServer.Rooms;
 using GameServer.Weapons;
+using Newtonsoft.Json;
 
 int ID = 1;
 int gameLevel = 1;
+bool isGameContinue = true;
+int mobsCount = 10;
 Random random = new Random();
+List<string> currentGameActions = new List<string>();
 
 List<User> clients = new List<User>();
 List<Mob> mobs = new List<Mob>();
@@ -26,19 +31,43 @@ listener.Bind(new IPEndPoint(ipAddress, port));
 listener.Listen(10);
 Console.WriteLine($"Сервер запущен. Ожидание подключений на порту {port}...");
 
-while (true)
+_ = Task.Run(async () =>
 {
-    Socket client = await listener.AcceptAsync();
+    while (true)
+    {
+        Socket client = await listener.AcceptAsync();
 
-    int clientId = ID++;
+        int clientId = ID++;
 
-    User user = new User(clientId, client);
+        User user = new User(clientId, client);
 
-    clients.Add(user);
+        clients.Add(user);
 
-    _ = HandleClientMessagesAsync(clientId);
+        _ = HandleClientMessagesAsync(user);
+    }
+});
+
+
+while(isGameContinue)
+{
+    if (clients?.Count == 0) continue;
+
+    MobsInit(mobsCount);
+    CaveInit(gameLevel);
+
+
+
+
+    Message msg = new Message();
+    msg.users = clients ?? new List<User>();
+    msg.mobs = currentCave?.mobs ?? new List<Mob>();
+    msg.gameActions = currentGameActions.ToList();
+
+    BroadcastMessage(msg);
+    Thread.Sleep(10000);
+
+    gameLevel++;
 }
-
 
 
 
@@ -61,11 +90,9 @@ void MobsInit(int mobsCount)
     }
 }
 
-async Task HandleClientMessagesAsync(int clientId)
+async Task HandleClientMessagesAsync(User user)
 {
-    Socket client = clients[clientId].UserSocket;
-
-    User currentUser = clients[clientId];
+    Socket client = user.UserSocket;
 
     using NetworkStream stream = new NetworkStream(client);
 
@@ -73,42 +100,54 @@ async Task HandleClientMessagesAsync(int clientId)
     int bytesRead;
 
     bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-    currentUser.Name = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-    BroadcastMessage($"Игрок {currentUser.Name} присоеденился к игре");
 
+    string jsonMsg = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+    Message msg = JsonConvert.DeserializeObject<Message>(jsonMsg);
+
+    if(msg != null)
+    {
+        user.Name = msg.ouner;
+        currentGameActions.Add($"Игрок {user.Name} присоеденился к игре");
+    }
+        
     try
     {
         while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
         {
-            string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            Console.WriteLine($"Сообщение от клиента {clientId}: {message}");
+            string clientResponse = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            Message message = JsonConvert.DeserializeObject<Message>(clientResponse);
 
-            BroadcastMessage(message);
+            if (message == null) continue;
         }
     }
     catch (IOException ex)
     {
-        Console.WriteLine($"Ошибка при обработке сообщений от клиента. Клиент {clientId} отключен: {ex.Message}");
+        Console.WriteLine($"Ошибка при обработке сообщений от клиента. Клиент {user.Name} отключен: {ex.Message}");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Ошибка при обработке сообщений от клиента {clientId}: {ex.Message}", "Server error");
+        Console.WriteLine($"Ошибка при обработке сообщений от клиента {user.Name}: {ex.Message}", "Server error");
     }
     finally
     {
-        clients.TryRemove(clientId, out _);
+        clients.Remove(user);
 
-        client.Close();        
+        client.Close();
 
-        BroadcastMessage($"{clientId} is exited");
+        currentGameActions.Add($"{user.Name} is exited");
     }
 }
 
-void BroadcastMessage(string message)
+void BroadcastMessage(Message mes)
 {
-    byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+    if (clients?.Count == 0) return;
 
-    foreach (var client in clients.Values)
+    string jsonMessage = JsonConvert.SerializeObject(mes);
+
+    byte[] messageBytes = Encoding.UTF8.GetBytes(jsonMessage);
+
+    foreach (var client in clients)
     {
         if (client.UserSocket.Connected)
         {

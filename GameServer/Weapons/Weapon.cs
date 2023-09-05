@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GameServer.Weapons
 {
-    internal class Weapon
+    public class Weapon
     {
         string? _name;
         int _healthBuff;

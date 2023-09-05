@@ -8,13 +8,14 @@ using System.Threading.Tasks;
 
 namespace GameServer.Characters
 {
-    internal class Mob
+    public class Mob
     {
         int _id;
         string? _name;
         int _health;
         int _attack;
         int _defense;
+        bool _isAlive;
 
         public Mob(int id, string? name, int health, int attack, int deffence)
         {
@@ -22,7 +23,8 @@ namespace GameServer.Characters
             Name = name;
             Health = health;
             Attack = attack;
-            Deffence = deffence;            
+            Deffence = deffence;
+            _isAlive = true;
         }
 
         public int Id { get => _id; set { _id = value; } }
@@ -35,6 +37,7 @@ namespace GameServer.Characters
         public int Health { get => _health; set { _health = value; } }
         public int Attack { get => _attack; set { _attack = value; } }
         public int Deffence { get => _defense; set { _defense = value; } }
+        public bool IsAlive { get => _isAlive; set { _isAlive = value; } }
 
 
         public override string ToString()

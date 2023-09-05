@@ -8,13 +8,14 @@ using System.Threading.Tasks;
 
 namespace GameServer.Characters
 {
-    internal class User
+    public class User
     {
         int _id;
         string? _name;
         int _health;
         int _attack;
         int _defense;
+        bool _isAlive;
         int _experiance;
         int _level;
         Weapon? _weapon;
@@ -30,6 +31,7 @@ namespace GameServer.Characters
             _level = 1;
             _weapon = null;
             UserSocket = socket;
+            _isAlive = true;
         }
 
         public int Id => _id;
@@ -39,9 +41,10 @@ namespace GameServer.Characters
             set { _name = value != null? value : $"player{_id}"; }
         }
         
-        public int Health => _health;
-        public int Attack => _attack;
-        public int Deffence => _defense;
+        public int Health { get => _health; set { _health = value; } }
+        public int Attack { get => _attack; set { _attack = value; } }
+        public int Deffence { get => _defense; set { _defense = value; } }
+        public bool IsAlive { get => _isAlive; set { _isAlive = value; } }
         public int Experiance {
             get => _experiance;
             set
@@ -80,17 +83,17 @@ namespace GameServer.Characters
                 if(value != null)
                 {
                     _weapon = value;
-                    _health += _weapon.HealthBuff;
-                    _attack += _weapon.AttackBuff;
-                    _defense += _weapon.DeffenceBuff;
+                    Health += _weapon.HealthBuff;
+                    Attack += _weapon.AttackBuff;
+                    Deffence += _weapon.DeffenceBuff;
                 }
                 else
                 {
                     if(_weapon != null)
                     {
-                        _health -= _weapon.HealthBuff;
-                        _attack -= _weapon.AttackBuff;
-                        _defense -= _weapon.DeffenceBuff;
+                        Health -= _weapon.HealthBuff;
+                        Attack -= _weapon.AttackBuff;
+                        Deffence -= _weapon.DeffenceBuff;
                         _weapon = null;
                     }
                 }
@@ -101,7 +104,7 @@ namespace GameServer.Characters
 
         public override string ToString()
         {
-            return $"Player: {Name}\t\tlvl: {Level}  Health: {Health}  Att: {Attack}  Deff: {Deffence}  Weapon: {Weapon?.ToString()?? "no weapon"}";
+            return $"{Name}\tlvl:{Level}  Health:{Health}  Att:{Attack}  Deff:{Deffence}  Weapon:{Weapon?.ToString()?? "no weapon"}";
         }
     }
 }

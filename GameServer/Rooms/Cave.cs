@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace GameServer.Rooms
 {
-    internal class Cave
+    public class Cave
     {
         public List<User> users = new List<User>();
         public List<Mob> mobs = new List<Mob>();
