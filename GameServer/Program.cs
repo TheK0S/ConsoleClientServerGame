@@ -28,11 +28,15 @@ Cave? currentCave;
 IPAddress ipAddress = IPAddress.Parse("127.0.0.1");
 int port = 4444;
 
+
+
 Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 listener.Bind(new IPEndPoint(ipAddress, port));
 listener.Listen(10);
 Console.WriteLine($"Сервер запущен. Ожидание подключений на порту {port}...");
 
+
+//Data exchange
 _ = Task.Run(async () =>
 {
     while (true)
@@ -50,24 +54,81 @@ _ = Task.Run(async () =>
 });
 
 
-while(isGameContinue)
+
+WeaponsFill();
+MobsInit(mobsCount);
+CaveInit(gameLevel, mobsCount);
+
+//Game actions
+while (isGameContinue)
 {
     if (clients?.Count == 0) continue;
-
-    MobsInit(mobsCount);
-    CaveInit(gameLevel, mobsCount);
 
     UsersTurn();
     MobsTurn();
 
-
     BroadcastMessage(CreateMessage());
     currentGameActions.Clear();
-    Thread.Sleep(3000);
+    RemoveTheDead();
+    Thread.Sleep(2000);
 
-    gameLevel++;
+    if (currentCave == null || currentCave.mobs.Count <= 0)
+    {
+        Message CongratulationMsg = CreateMessage();
+        CongratulationMsg.gameActions = new List<string> { "Поздравляю! Вы прошли уровень!\n\nГотовтесь к новой битве!" };
+
+        int randomIndex = random.Next(currentCave.users.Count - 1);
+        User user = currentCave.users[randomIndex];
+        user.Weapon = null;
+
+        int randomWeaponIndex = random.Next(weapons.Count - 1);
+        user.Weapon = weapons[randomWeaponIndex];
+
+        CongratulationMsg.gameActions.Add($"Игрок {user.Name} получил в награду {user.Weapon}");
+        BroadcastMessage(CongratulationMsg);
+
+        gameLevel++;
+        MobsInit(mobsCount);
+        CaveInit(gameLevel, mobsCount);
+    }
+
+    if (currentCave.users.Count <= 0)
+    {
+        Message CongratulationMsg = CreateMessage();
+        CongratulationMsg.gameActions = new List<string> { "Вы проиграли!" };
+        BroadcastMessage(CongratulationMsg);
+
+        Thread.Sleep(3000);
+        break;
+    }
 }
 
+
+
+
+void WeaponsFill(){
+    weapons.Add(new Weapon("Meч", 0, 40, 0));
+    weapons.Add(new Weapon("Щит", 0, 0, 20));
+    weapons.Add(new Weapon("Булава", 0, 30, 0));
+    weapons.Add(new Weapon("Аптечка", 50, 0, 0));
+}
+
+void RemoveTheDead()
+{
+    if(currentCave == null) return;
+
+    foreach (var user in currentCave.users)
+    {
+        if(!user.IsAlive)
+            currentCave.users.Remove(user);
+    }
+
+    foreach (var mob in currentCave.mobs)
+    {
+        if (!mob.IsAlive)
+            currentCave.mobs.Remove(mob);
+    }
+}
 
 void UsersTurn()
 {
@@ -87,7 +148,13 @@ void UsersTurn()
 
 void MobsTurn()
 {
+    if (currentCave == null || currentCave.mobs.Count <= 0) return;
 
+    foreach (var mob in currentCave.mobs)
+    {
+        int userIndex = random.Next(currentCave.users.Count - 1);
+        currentGameActions.Add(mob.AttackTheUser(currentCave.users[userIndex]));
+    }
 }
 
 Message CreateMessage()
@@ -105,7 +172,7 @@ void CaveInit(int gameLvl, int mCount)
     if(gameLvl > mCount -1) gameLvl = mCount - 1;
 
     currentCave = new Cave();
-    currentCave.users = clients ?? new List<User>();
+    currentCave.users = clients?.FindAll(c => c.IsAlive == true) ?? new List<User>();
     currentCave.mobs = new List<Mob>();
 
     for (int i = 0; i < gameLvl + 1; i++)
