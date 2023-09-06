@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace GameServer.Characters
 {
@@ -19,6 +20,7 @@ namespace GameServer.Characters
         bool _isAlive;
         int _experiance;
         int _level;
+        int _targetId;
         Weapon? _weapon;
 
         public User(int id, Socket socket, string? name = null)
@@ -76,6 +78,9 @@ namespace GameServer.Characters
 
             } 
         }
+
+        public int TargetId { get => _targetId; set => _targetId = value; }
+
         public Weapon? Weapon
         { 
             get => _weapon;
@@ -121,6 +126,18 @@ namespace GameServer.Characters
 
             mob.IsAlive = false;
             return $"{Name} уничтожил {mob.Name}";
+        }
+
+        public string DropWeapon(User user)
+        {
+            if(Weapon == null) return $"{Name} нет оружия для передачи";
+
+            if (user == null || !user.IsAlive) return $"{Name} ошибся при выборе адресата передачи оружия";
+
+            user.Weapon = Weapon;
+            Weapon = null;
+
+            return $"{Name} передал {user.Weapon.Name} игроку {user.Name}";
         }
     }
 }

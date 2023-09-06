@@ -1,6 +1,7 @@
 ﻿//Server
 
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -16,6 +17,7 @@ bool isGameContinue = true;
 int mobsCount = 10;
 Random random = new Random();
 List<string> currentGameActions = new List<string>();
+Queue<GameAction> gameActions = new Queue<GameAction>();
 
 List<User> clients = new List<User>();
 List<Mob> mobs = new List<Mob>();
@@ -55,12 +57,9 @@ while(isGameContinue)
     MobsInit(mobsCount);
     CaveInit(gameLevel, mobsCount);
 
-    GameActionsHandler();
+    UsersTurn();
+    MobsTurn();
 
-
-
-    
-    
 
     BroadcastMessage(CreateMessage());
     currentGameActions.Clear();
@@ -70,7 +69,23 @@ while(isGameContinue)
 }
 
 
-void GameActionsHandler()
+void UsersTurn()
+{
+    while (gameActions.Count > 0)
+    {
+        var currentAction = gameActions.Dequeue();
+        User currentUser = clients?[currentAction.ounerId];
+
+        if (currentUser == null) return;
+
+        if (currentAction.isAttack)
+            currentGameActions.Add(currentUser.AttackTheEnemy(currentCave.mobs?[currentAction.targetId]));
+        else
+            currentGameActions.Add(currentUser.DropWeapon(currentCave.users?[currentAction.targetId]));
+    }
+}
+
+void MobsTurn()
 {
 
 }
@@ -136,6 +151,13 @@ async Task HandleClientMessagesAsync(User user)
             Message message = JsonConvert.DeserializeObject<Message>(clientResponse);
 
             if (message == null) continue;
+
+            user.TargetId = message.targetId;
+            if(message.action != null && message.action == "attack")
+                gameActions.Enqueue(new GameAction(user.Id, user.TargetId, true));
+
+            if (message.action != null && message.action == "send")
+                gameActions.Enqueue(new GameAction(user.Id, user.TargetId, false));
         }
     }
     catch (IOException ex)

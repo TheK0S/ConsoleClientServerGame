@@ -51,6 +51,8 @@ string MountUserUI(Message message)
 
     foreach (var action in message.gameActions) stringUI += $"{action}\n";
 
+    Console.Clear();
+
     return stringUI;
 }
 
