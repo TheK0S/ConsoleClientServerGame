@@ -55,15 +55,23 @@ _ = Task.Run(async () =>
 
 
 
-WeaponsFill();
-MobsInit(mobsCount);
-CaveInit(gameLevel, mobsCount);
+
+while (true)
+{
+    if (clients?.Count == 0) continue;
+
+    WeaponsFill();
+    MobsInit(mobsCount);
+    CaveInit(gameLevel, mobsCount);
+
+    break;
+}
+
+
 
 //Game actions
 while (isGameContinue)
 {
-    if (clients?.Count == 0) continue;
-
     UsersTurn();
     MobsTurn();
 

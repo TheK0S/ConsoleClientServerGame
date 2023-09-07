@@ -6,9 +6,15 @@ using System.Net;
 using GameServer.Characters;
 using Newtonsoft.Json;
 using GameServer;
+using Microsoft.VisualBasic;
 
 bool isInMenu = false;
 bool isGameStarted = false;
+bool isDataUpdate = false;
+
+Message currentMessage = new Message();
+object locker = new object();
+
 string serverIp = "127.0.0.1";
 int serverPort = 4444;
 EndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
@@ -22,14 +28,61 @@ name = Console.ReadLine();
 
 await socket.ConnectAsync(serverEndPoint);
 
-_ = SendMessageAsync(new Message { ouner = name ?? "no name" });
+await SendMessageAsync(new Message { ouner = name ?? "no name" });
 
 _ = Task.Run(ReceiveMessagesAsync);
 
 
 while (true)
 {
+    if (!isGameStarted) continue;
 
+    SelectAction();
+
+    while (true)
+    {
+        if (isDataUpdate) break;
+    }
+}
+
+
+void SelectAction()
+{
+    while (true)
+    {
+        Console.WriteLine("Нажми 1 чтобы атаковать или 2 чтобы передать оружие");
+        ConsoleKeyInfo key = Console.ReadKey();
+
+        Message msgToServer = new Message();
+
+        if (key.Key == ConsoleKey.D1)
+        {
+            while (true)
+            {
+                Console.WriteLine($"Выберите какого моба хотите атаковать и введите его номер по порядку от 1 до {currentMessage.mobs.Count}");
+
+                if (int.TryParse(Console.ReadLine(), out int mobIndex) && mobIndex > 0 && mobIndex <= currentMessage.mobs.Count)
+                {
+                    msgToServer.action = "attack";
+                    msgToServer.targetId = --mobIndex;
+
+                    break;
+                }
+            }
+        }
+        else if (key.Key == ConsoleKey.D2)
+        {
+            Console.WriteLine($"Выберите какому игроку вы хотите передать оружие. Введите его номер от 1 до {currentMessage.users.Count}" +
+                $" Внимание! Если вы укажете несуществующего играка, то оружие будет уничтожено");
+           
+            msgToServer.action = "send";
+            msgToServer.targetId = int.TryParse(Console.ReadLine(), out int userIndex)? --userIndex : -1;
+        }
+
+        isDataUpdate = false;
+
+        _ = SendMessageAsync(msgToServer);
+    }
 }
 
 
@@ -71,11 +124,20 @@ async Task ReceiveMessagesAsync()
         while ((bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None)) > 0)
         {
             isGameStarted = true;
+            isDataUpdate = true;
+
             string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
             Message responseMessage = JsonConvert.DeserializeObject<Message>(response);
 
-            if (isInMenu || responseMessage == null) continue;
+            if (responseMessage == null) continue;
+
+            lock (locker)
+            {
+                currentMessage = responseMessage;
+            }
+
+            if (isInMenu) continue;
                 
             await Console.Out.WriteLineAsync(MountUserUI(responseMessage));
         }
