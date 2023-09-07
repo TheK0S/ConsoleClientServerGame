@@ -50,7 +50,11 @@ namespace GameServer.Characters
             if (user == null || !user.IsAlive) return $"Игрок {user?.Name} уже мертв";
 
             int damage = Attack - user.Deffence;
-            user.Health -= damage;
+
+            if (damage > 0)
+                user.Health -= damage;
+            else
+                return $"{Name} не смог пробить броню игрока {user.Name}";
 
             if (user.Health > 0) return $"{Name} нанес {damage} урона игроку {user.Name}";
 

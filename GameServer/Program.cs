@@ -68,9 +68,11 @@ while (isGameContinue)
     MobsTurn();
 
     BroadcastMessage(CreateMessage());
+    Thread.Sleep(3000);
+
     currentGameActions.Clear();
     RemoveTheDead();
-    Thread.Sleep(2000);
+    
 
     if (currentCave == null || currentCave.mobs.Count <= 0)
     {
@@ -148,7 +150,9 @@ void UsersTurn()
 
 void MobsTurn()
 {
-    if (currentCave == null || currentCave.mobs.Count <= 0) return;
+    if (currentCave == null || currentCave.mobs.Count == 0) return;
+
+    if (currentCave.users.Count == 0) return;
 
     foreach (var mob in currentCave.mobs)
     {

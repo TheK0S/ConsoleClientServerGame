@@ -8,12 +8,14 @@ using Newtonsoft.Json;
 using GameServer;
 
 bool isInMenu = false;
+bool isGameStarted = false;
 string serverIp = "127.0.0.1";
 int serverPort = 4444;
 EndPoint serverEndPoint = new IPEndPoint(IPAddress.Parse(serverIp), serverPort);
 Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
 string? name;
+
 Console.WriteLine("Добро пожаловать в Подземелье\n");
 Console.Write("Введи свое имя: ");
 name = Console.ReadLine();
@@ -25,7 +27,10 @@ _ = SendMessageAsync(new Message { ouner = name ?? "no name" });
 _ = Task.Run(ReceiveMessagesAsync);
 
 
-Console.ReadLine();
+while (true)
+{
+
+}
 
 
 async Task SendMessageAsync(Message message)
@@ -65,6 +70,7 @@ async Task ReceiveMessagesAsync()
     {
         while ((bytesRead = await socket.ReceiveAsync(buffer, SocketFlags.None)) > 0)
         {
+            isGameStarted = true;
             string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
             Message responseMessage = JsonConvert.DeserializeObject<Message>(response);

@@ -119,8 +119,15 @@ namespace GameServer.Characters
             if (mob == null || !mob.IsAlive) return $"Соперник {mob?.Name} уже мертв";
 
             int damage = Attack - mob.Deffence;            
-            mob.Health -= damage;
-            Experiance += damage;
+            
+            
+
+            if (damage > 0)
+            {
+                mob.Health -= damage;
+                Experiance += damage;
+            }                
+            else return $"{Name} не смог пробить броню {mob.Name}";
 
             if (mob.Health > 0) return $"{Name} нанес {damage} урона {mob.Name}";
 
