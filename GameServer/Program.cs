@@ -81,11 +81,17 @@ while (isGameContinue)
     currentGameActions.Clear();
     RemoveTheDead();
 
-    Console.WriteLine($" мобов осталось: {currentCave?.mobs.Count}");
-    //if (currentCave == null || currentCave.mobs.Count == 0)
-    if (currentCave.mobs.Count == 0)
+    if (currentCave == null || currentCave.mobs.Count == 0)
     {
         Message CongratulationMsg = CreateMessage();
+        if(gameLevel == 7)
+        {
+            CongratulationMsg.gameActions.Add("> Поздравляю! Вы ЧЕМПИОН!");
+            BroadcastMessage(CongratulationMsg);
+            isGameContinue = false;
+            continue;
+        }
+
         CongratulationMsg.gameActions.Add("> Поздравляю! Вы прошли уровень!\n\nГотовтесь к новой битве!" );
 
         int randomIndex = random.Next(currentCave.users.Count - 1);
@@ -198,7 +204,7 @@ void CaveInit(int gameLvl, int mCount)
     currentCave.mobs = new List<Mob>();
 
     for (int i = 0; i < gameLvl + 1; i++)
-        currentCave.mobs.Add(mobs[random.Next(gameLvl)]);
+        currentCave.mobs.Add(mobs[i]);
 }
 
 void MobsInit(int mobsCount)
