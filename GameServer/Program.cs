@@ -76,16 +76,17 @@ while (isGameContinue)
     MobsTurn();
 
     BroadcastMessage(CreateMessage());
-    Thread.Sleep(3000);
+    Thread.Sleep(7000);
 
     currentGameActions.Clear();
     RemoveTheDead();
-    
 
-    if (currentCave == null || currentCave.mobs.Count <= 0)
+    Console.WriteLine($" мобов осталось: {currentCave?.mobs.Count}");
+    //if (currentCave == null || currentCave.mobs.Count == 0)
+    if (currentCave.mobs.Count == 0)
     {
         Message CongratulationMsg = CreateMessage();
-        CongratulationMsg.gameActions = new List<string> { "Поздравляю! Вы прошли уровень!\n\nГотовтесь к новой битве!" };
+        CongratulationMsg.gameActions.Add("> Поздравляю! Вы прошли уровень!\n\nГотовтесь к новой битве!" );
 
         int randomIndex = random.Next(currentCave.users.Count - 1);
         User user = currentCave.users[randomIndex];
@@ -127,17 +128,24 @@ void RemoveTheDead()
 {
     if(currentCave == null) return;
 
-    foreach (var user in currentCave.users)
-    {
-        if(!user.IsAlive)
-            currentCave.users.Remove(user);
-    }
+    List<int> usersToRemove = new List<int>();
+    List<int> mobsToRemove = new List<int>();
 
+    //User remove
+    foreach (var user in currentCave.users)
+        if (!user.IsAlive)
+            usersToRemove.Add(currentCave.users.IndexOf(user));
+
+    foreach (var userIndex in usersToRemove)
+        if (userIndex != -1) currentCave.users.RemoveAt(userIndex);
+
+    //Mob remove
     foreach (var mob in currentCave.mobs)
-    {
         if (!mob.IsAlive)
-            currentCave.mobs.Remove(mob);
-    }
+            mobsToRemove.Add(currentCave.mobs.IndexOf(mob));
+
+    foreach (var mobIndex in mobsToRemove)
+        if (mobIndex != -1) currentCave.mobs.RemoveAt(mobIndex);
 }
 
 void UsersTurn()
@@ -145,14 +153,14 @@ void UsersTurn()
     while (gameActions.Count > 0)
     {
         var currentAction = gameActions.Dequeue();
-        User currentUser = clients?[currentAction.ounerId];
+        User currentUser = clients?[currentAction.ounerId-1];
 
         if (currentUser == null) return;
 
         if (currentAction.isAttack)
             currentGameActions.Add(currentUser.AttackTheEnemy(currentCave.mobs?[currentAction.targetId]));
         else
-            currentGameActions.Add(currentUser.DropWeapon(currentCave.users?[currentAction.targetId]));
+            currentGameActions.Add(currentUser.DropWeapon(currentCave.users?[currentAction.targetId - 1]));
     }
 }
 
@@ -165,6 +173,8 @@ void MobsTurn()
     foreach (var mob in currentCave.mobs)
     {
         int userIndex = random.Next(currentCave.users.Count - 1);
+        if (userIndex < 0 || userIndex >= currentCave.users.Count) continue;
+
         currentGameActions.Add(mob.AttackTheUser(currentCave.users[userIndex]));
     }
 }

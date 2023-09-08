@@ -29,7 +29,7 @@ namespace GameServer.Characters
             Name = name;
             _health = 100;
             _attack = 10;
-            _defense = 10;
+            _defense = 1;
             _experiance = 0;
             _level = 1;
             _weapon = null;
@@ -119,8 +119,6 @@ namespace GameServer.Characters
             if (mob == null || !mob.IsAlive) return $"Соперник {mob?.Name} уже мертв";
 
             int damage = Attack - mob.Deffence;            
-            
-            
 
             if (damage > 0)
             {

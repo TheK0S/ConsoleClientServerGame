@@ -11,9 +11,12 @@ using Microsoft.VisualBasic;
 bool isInMenu = false;
 bool isGameStarted = false;
 bool isDataUpdate = false;
+bool isCompleteUserAction = false;
+bool isFirstMessage = true;
 
 Message currentMessage = new Message();
 object locker = new object();
+List<string> currentActions = new List<string>();
 
 string serverIp = "127.0.0.1";
 int serverPort = 4444;
@@ -48,43 +51,65 @@ while (true)
 
 void SelectAction()
 {
-    while (true)
+    isCompleteUserAction = false;
+
+    currentActions.Add("> Нажми 1 чтобы атаковать или 2 чтобы передать оружие");
+    MountUserUI(currentMessage);
+    PrintActions();
+
+    ConsoleKeyInfo key = Console.ReadKey();
+
+    Message msgToServer = new Message();
+    
+    if (key.Key == ConsoleKey.D1)
     {
-        Console.WriteLine("Нажми 1 чтобы атаковать или 2 чтобы передать оружие");
-        ConsoleKeyInfo key = Console.ReadKey();
-
-        Message msgToServer = new Message();
-
-        if (key.Key == ConsoleKey.D1)
+        while (true)
         {
-            while (true)
+            currentActions.Add($"> Введите номер по порядку моба для атаки от 1 до {currentMessage.mobs.Count}");
+            MountUserUI(currentMessage);
+            PrintActions();
+
+            if (int.TryParse(Console.ReadLine(), out int mobIndex) && mobIndex > 0 && mobIndex <= currentMessage.mobs.Count)
             {
-                Console.WriteLine($"Выберите какого моба хотите атаковать и введите его номер по порядку от 1 до {currentMessage.mobs.Count}");
+                msgToServer.ouner = name;
+                msgToServer.action = "attack";
+                msgToServer.targetId = --mobIndex;
+                isCompleteUserAction = true;
 
-                if (int.TryParse(Console.ReadLine(), out int mobIndex) && mobIndex > 0 && mobIndex <= currentMessage.mobs.Count)
-                {
-                    msgToServer.action = "attack";
-                    msgToServer.targetId = --mobIndex;
-
-                    break;
-                }
+                break;
             }
         }
-        else if (key.Key == ConsoleKey.D2)
-        {
-            Console.WriteLine($"Выберите какому игроку вы хотите передать оружие. Введите его номер от 1 до {currentMessage.users.Count}" +
-                $" Внимание! Если вы укажете несуществующего играка, то оружие будет уничтожено");
-           
-            msgToServer.action = "send";
-            msgToServer.targetId = int.TryParse(Console.ReadLine(), out int userIndex)? --userIndex : -1;
-        }
-
-        isDataUpdate = false;
-
-        _ = SendMessageAsync(msgToServer);
     }
+    else if (key.Key == ConsoleKey.D2)
+    {
+        currentActions.Add($"> Выберите какому игроку вы хотите передать оружие. Введите его номер от 1 до {currentMessage.users.Count}" +
+            $" Внимание! Если вы укажете несуществующего играка, то оружие будет уничтожено");
+
+        MountUserUI(currentMessage);
+        PrintActions();
+
+        msgToServer.action = "send";
+        msgToServer.targetId = int.TryParse(Console.ReadLine(), out int userIndex) ? --userIndex : -1;
+        isCompleteUserAction = true;
+    }
+
+    isDataUpdate = false;
+    MountUserUI(currentMessage);
+
+    _ = SendMessageAsync(msgToServer);
 }
 
+
+
+
+
+void PrintActions()
+{
+    Console.Clear();
+
+    foreach (var action in currentActions)
+        Console.WriteLine(action);
+}
 
 async Task SendMessageAsync(Message message)
 {
@@ -95,24 +120,26 @@ async Task SendMessageAsync(Message message)
     await socket.SendToAsync(messageBytes, SocketFlags.None, serverEndPoint);
 }
 
-string MountUserUI(Message message)
+void MountUserUI(Message message)
 {
-    string stringUI = "";
+    List<string> userActions = currentActions.FindAll(a => a.StartsWith('>'));
 
-    foreach (var client in message.users) stringUI += $"{client}\n";
+    currentActions.Clear();
 
-    stringUI += "\n\n";
+    foreach (var client in message.users) currentActions.Add($"{client}");
+    if (currentActions.Count > 0) currentActions[currentActions.Count - 1] += "\n";
 
-    foreach (var mob in message.mobs) stringUI += $"{mob}\n";
+    foreach (var mob in message.mobs) currentActions.Add($"{mob}");
+    if (currentActions.Count > 0) currentActions[currentActions.Count - 1] += "\n";
 
-    stringUI += "\n\n";
 
-    foreach (var action in message.gameActions) stringUI += $"{action}\n";
+    foreach (var action in message.gameActions) currentActions.Add($"{action}");
+    if (currentActions.Count > 0) currentActions[currentActions.Count - 1] += "\n";
 
-    Console.Clear();
+    if (!isCompleteUserAction) currentActions.AddRange(userActions);
 
-    return stringUI;
 }
+
 
 async Task ReceiveMessagesAsync()
 {
@@ -138,8 +165,9 @@ async Task ReceiveMessagesAsync()
             }
 
             if (isInMenu) continue;
-                
-            await Console.Out.WriteLineAsync(MountUserUI(responseMessage));
+
+            MountUserUI(responseMessage);
+            if(!isFirstMessage) PrintActions();
         }
     }
     catch (Exception ex)
